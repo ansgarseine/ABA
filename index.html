@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Bestandsaufnahme V42 – iOS</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root { --primary: #1a56db; --bg: #f0f4ff; --card: #ffffff; --text: #1e293b; --border: #e2e8f0; --radius: 12px; --success: #10b981; --error: #ef4444; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+  /* iOS Safari: position:sticky braucht overflow:visible auf allen Eltern */
+  header { background: var(--primary); color: white; padding: 0 15px; position: -webkit-sticky; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.15); overflow: visible; }
+  .header-top { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; height: 52px; gap: 10px; }
+  .header-back { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 11px; border-radius: 6px; font-weight: bold; cursor: pointer; display: none; font-size: 14px; -webkit-flex-shrink: 0; flex-shrink: 0; -webkit-appearance: none; }
+  header h3 { -webkit-flex-grow: 1; flex-grow: 1; text-align: center; font-size: 17px; }
+
+  .tab-bar { display: -webkit-flex; display: flex; gap: 4px; padding: 8px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.8); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; -webkit-flex-shrink: 0; flex-shrink: 0; -webkit-appearance: none; }
+  .tab-btn.active { background: white !important; color: var(--primary) !important; border-color: white; }
+  .tab-btn.locked { opacity: 0.45; }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 15px; padding-bottom: 100px; }
+  .card { background: var(--card); border-radius: var(--radius); padding: 20px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+  .checkbox-group { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+  /* iOS: label mit input[type=checkbox] braucht display:flex für tap-Bereich */
+  .checkbox-item { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; padding: 8px 0; min-width: 45%; }
+  .checkbox-item input { width: 24px; height: 24px; cursor: pointer; margin: 0; -webkit-appearance: checkbox; appearance: checkbox; }
+
+  /* iOS Safari: cursor:pointer ist PFLICHT damit onclick auf divs feuert */
+  .room-accordion { background: #cbd5e1; border-radius: 8px; margin-bottom: 8px; overflow: hidden; border: 1px solid #94a3b8; }
+  .room-header-bar { background: #e2e8f0; padding: 14px 15px; cursor: pointer; display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; font-weight: bold; color: #334155; -webkit-user-select: none; user-select: none; }
+  .room-body { display: none; background: white; padding: 15px; }
+  .room-body.active { display: block; }
+  .done-mark { color: var(--success); font-weight: bold; font-size: 16px; }
+
+  .field { margin-bottom: 15px; }
+  .field label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; color: #64748b; }
+
+  /* iOS Safari: font-size 16px verhindert Auto-Zoom beim Fokus */
+  input, textarea { width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 16px; outline: none; -webkit-appearance: none; appearance: none; background: white; color: var(--text); }
+  /* Select MUSS -webkit-appearance:auto behalten – sonst kein nativer Picker auf iOS */
+  select { width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 16px; outline: none; background: white; color: var(--text); -webkit-appearance: auto; appearance: auto; }
+  input[style*="border: 2px solid"] { border-color: var(--error) !important; background-color: #fef2f2; }
+
+  /* Datum als 3 Selects nebeneinander */
+  .date-row { display: -webkit-flex; display: flex; gap: 8px; }
+  .date-row select { -webkit-flex: 1; flex: 1; padding: 12px 8px; }
+
+  /* Material-Grid: 2 Spalten */
+  .material-grid { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+  .material-item { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; font-size: 12px; width: calc(50% - 5px); }
+  /* type=tel statt number — iOS zeigt Numpad, kein Spinner-Bug */
+  .material-item input { padding: 8px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; margin-top: 4px; font-size: 16px; }
+
+  /* Buttons: -webkit-appearance:none + min-height für guten Tap-Bereich */
+  .btn { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; gap: 8px; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; width: 100%; margin-bottom: 10px; font-size: 15px; -webkit-appearance: none; appearance: none; min-height: 48px; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-photo { background: #334155; color: white; font-size: 13px; padding: 12px; margin-top: 5px; }
+  .btn-ok { background: #f8fafc; border: 2px dashed #cbd5e1; color: #64748b; margin-bottom: 15px; }
+  .btn-ok.active { background: #d1fae5; border: 2px solid var(--success); color: #065f46; }
+  .btn-opt { background: #f1f5f9; color: #1e293b; border: 1px dashed #94a3b8; font-size: 13px; margin-bottom: 15px; }
+  .btn-danger { background: var(--error); color: white; }
+
+  /* Elec-Komponenten */
+  .elec-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+  .elec-label { font-size: 14px; -webkit-flex-grow: 1; flex-grow: 1; padding-right: 10px; color: #334155; }
+  .elec-controls { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 5px; -webkit-flex-shrink: 0; flex-shrink: 0; }
+  /* cursor:pointer + min 44px Tap-Ziel für iOS */
+  .btn-elec { width: 44px; height: 44px; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 22px; font-weight: bold; cursor: pointer; display: -webkit-flex; display: flex; -webkit-justify-content: center; justify-content: center; -webkit-align-items: center; align-items: center; -webkit-user-select: none; user-select: none; -webkit-appearance: none; appearance: none; }
+  .btn-elec:active { background: #cbd5e1; }
+  .elec-input { width: 52px; height: 44px; text-align: center; font-size: 15px; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0; }
+  .elec-section-head { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; padding: 12px 0 4px; border-top: 1px solid #f1f5f9; margin-top: 4px; }
+
+  .step { display: none; }
+  .step.active { display: block; }
+  .nav-info { text-align: center; font-size: 12px; color: var(--primary); font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .summary-box { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; border: 1px solid #e2e8f0; }
+  .error-msg { color: var(--error); font-size: 14px; font-weight: bold; margin-bottom: 10px; text-align: center; display: none; padding: 10px; background: #fef2f2; border-radius: 8px; }
+
+  .etappen-nav { display: -webkit-flex; display: flex; gap: 6px; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin-bottom: 15px; }
+  /* cursor:pointer damit iOS click feuert */
+  .et-btn { padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--primary); background: white; color: var(--primary); min-height: 36px; -webkit-appearance: none; }
+  .et-btn.active { background: var(--primary); color: white; }
+  .et-btn.done { border-color: var(--success); color: var(--success); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <button id="topBackBtn" class="header-back" onclick="universalBack()">← Zurück</button>
+    <h3>Bestandsaufnahme V42</h3>
+  </div>
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn active" id="tab_step1" data-step="step1" onclick="tabClick('step1')">📋 Stammdaten</button>
+    <button class="tab-btn locked" id="tab_stepSurvey" data-step="stepSurvey" onclick="tabClick('stepSurvey')">🏠 Aufnahme <span id="check_tab_Survey"></span></button>
+    <button class="tab-btn locked" id="tab_stepElec" data-step="stepElec" onclick="tabClick('stepElec')">⚡ Elektr. Anlage <span id="check_tab_Elec"></span></button>
+    <button class="tab-btn locked" id="tab_stepFinal" data-step="stepFinal" onclick="tabClick('stepFinal')">✅ Abschluss <span id="check_tab_Final"></span></button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- ========== STAMMDATEN ========== -->
+  <div class="step active" id="step1">
+    <div class="nav-info">STAMMDATEN</div>
+    <div class="card">
+      <!-- Datum als 3 Selects – Safari kennt kein type=date -->
+      <div class="field">
+        <label>Datum</label>
+        <div class="date-row">
+          <select id="datTag"></select>
+          <select id="datMonat">
+            <option value="01">Januar</option><option value="02">Februar</option><option value="03">März</option>
+            <option value="04">April</option><option value="05">Mai</option><option value="06">Juni</option>
+            <option value="07">Juli</option><option value="08">August</option><option value="09">September</option>
+            <option value="10">Oktober</option><option value="11">November</option><option value="12">Dezember</option>
+          </select>
+          <select id="datJahr"></select>
+        </div>
+      </div>
+      <div class="field"><label>Auftragsnummer *</label><input type="text" id="auftragsNummer" placeholder="z.B. 2/260367" autocomplete="off" autocorrect="off" autocapitalize="off"></div>
+      <div class="field"><label>Monteur *</label><input type="text" id="monteurName" placeholder="Name" autocorrect="off"></div>
+      <div class="field"><label>Straße / Hausnr. *</label><input type="text" id="strasse" placeholder="Musterstr. 1" autocorrect="off"></div>
+      <div class="field"><label>Stadt *</label><input type="text" id="stadt" placeholder="Mannheim" autocorrect="off"></div>
+      <div class="field"><label>Objekt-Typ</label>
+        <select id="objektTyp" onchange="toggleTyp()">
+          <option value="wohnung">🏢 Mietwohnung</option>
+          <option value="haus" selected>🏠 Haus (EFH/ZFH)</option>
+        </select>
+      </div>
+      <div id="lageWohnungField" class="field" style="display:none;">
+        <label>Lage der Wohnung *</label>
+        <input type="text" id="lageWohnung" placeholder="z.B. 1. OG links" autocorrect="off">
+      </div>
+    </div>
+
+    <div id="wohnungFields" style="display:none;" class="card">
+      <div class="field"><label>Zimmeranzahl</label>
+        <select id="zimmerAnzahl"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select>
+      </div>
+    </div>
+    <div id="hausFields" class="card" style="display:block;">
+      <div class="field"><label>Etagen</label>
+        <select id="ogAnzahl" onchange="storage['ogAnzahl']=this.value"><option value="0">EG</option><option value="1">EG+1.OG</option><option value="2" selected>EG+1.OG+2.OG</option></select>
+      </div>
+      <div class="field"><label>Zimmer pro Etage</label>
+        <select id="zimmerProEtage" onchange="storage['zimmerProEtage']=this.value"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select>
+      </div>
+    </div>
+
+    <div class="card">
+      <label style="display:block; font-weight:600; font-size:13px; margin-bottom:5px; color:#64748b;">ZUSATZBEREICHE:</label>
+      <div class="checkbox-group">
+        <label class="checkbox-item"><input type="checkbox" id="hasKeller"> Keller</label>
+        <label class="checkbox-item"><input type="checkbox" id="hasBalkon"> Balkon</label>
+        <label class="checkbox-item"><input type="checkbox" id="hasTerrasse"> Terrasse</label>
+        <label class="checkbox-item"><input type="checkbox" id="hasGarage"> Garage</label>
+      </div>
+    </div>
+    <div id="validationError" class="error-msg">Bitte alle Pflichtfelder (*) ausfüllen!</div>
+    <button class="btn btn-primary" onclick="validateAndStart()">Aufnahme starten →</button>
+  </div>
+
+  <!-- ========== AUFNAHME ========== -->
+  <div class="step" id="stepSurvey">
+    <div id="etappenNav" class="etappen-nav"></div>
+    <div id="currentEtappeTitle" class="nav-info">Etappe</div>
+    <div id="surveyContainer"></div>
+    <div id="dynamicKellerArea"></div>
+    <div style="display:-webkit-flex; display:flex; gap:10px; margin-top:20px;">
+      <button class="btn btn-primary" style="background:#64748b; -webkit-flex:1; flex:1;" onclick="universalBack()">← Zurück</button>
+      <button class="btn btn-primary" style="-webkit-flex:2; flex:2;" onclick="nextEtappe()">Weiter →</button>
+    </div>
+  </div>
+
+  <!-- ========== ELEKTRISCHE ANLAGE ========== -->
+  <div class="step" id="stepElec">
+    <div class="nav-info">ELEKTRISCHE ANLAGE</div>
+
+    <div class="room-accordion">
+      <div class="room-header-bar" onclick="toggleLocalAccordion('body_Z_SCHRANK_ACC')">
+        <span>⚡ Zählerschrank (ZV)</span><span id="mark_Z_SCHRANK" class="done-mark"></span>
+      </div>
+      <div id="body_Z_SCHRANK_ACC" class="room-body" style="display:none;">
+        <div class="elec-section-head">Zähler &amp; Hauptkomponenten</div>
+        <div class="field"><label>Anzahl Zählerplätze</label>
+          <select id="z_count" onchange="storage['z_count']=this.value; elecChanged()">
+            <option value="0">Kein Zählerschrank (nur UV)</option><option value="1">1 Zählerplatz</option>
+            <option value="2">2 Zählerplätze</option><option value="3">3 Zählerplätze</option><option value="4">4 Zählerplätze</option>
+          </select>
+        </div>
+        <div class="field"><label>SLS-Schalter Ausführung</label>
+          <select id="zv_sls" onchange="storage['zv_sls']=this.value; elecChanged()">
+            <option value="Kein">Kein SLS vorhanden</option><option value="35A">3-polig 35 A</option>
+            <option value="40A">3-polig 40 A</option><option value="50A" selected>3-polig 50 A (Standard)</option><option value="63A">3-polig 63 A</option>
+          </select>
+        </div>
+        <div class="elec-row"><div class="elec-label">Kombi-Ableiter (SPD Typ 1+2 Sammelschiene)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('zv_spd',-1)">−</button><input type="tel" id="zv_spd" value="0" class="elec-input" onclick="this.select()" oninput="storage['zv_spd']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('zv_spd',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">Hauptschalter ZV (Hauptleitungs-Schalter)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('zv_haupt',-1)">−</button><input type="tel" id="zv_haupt" value="0" class="elec-input" onclick="this.select()" oninput="storage['zv_haupt']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('zv_haupt',1)">+</button></div></div>
+        <div class="elec-section-head">Sicherungsfeld ZV (Keller / Heizung / Allgemeinstrom)</div>
+        <div class="field"><label>Größe des integrierten Verteilerfelds</label>
+          <select id="zv_rows" onchange="storage['zv_rows']=this.value; elecChanged()">
+            <option value="0">Kein separates Verteilerfeld</option><option value="1">1 Reihe frei für Sicherungen</option>
+            <option value="2" selected>2 Reihen frei (Standard Haustechnik)</option><option value="3">3 Reihen frei</option>
+          </select>
+        </div>
+        <div class="elec-row"><div class="elec-label">FI-Schutzschalter (RCD) 4-polig</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('zv_fi4',-1)">−</button><input type="tel" id="zv_fi4" value="0" class="elec-input" onclick="this.select()" oninput="storage['zv_fi4']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('zv_fi4',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">FI-Schutzschalter (RCD) 2-polig</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('zv_fi2',-1)">−</button><input type="tel" id="zv_fi2" value="0" class="elec-input" onclick="this.select()" oninput="storage['zv_fi2']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('zv_fi2',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">FI/LS Kombischalter (RCBO – z.B. WP/Außen)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('zv_rcbo',-1)">−</button><input type="tel" id="zv_rcbo" value="0" class="elec-input" onclick="this.select()" oninput="storage['zv_rcbo']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('zv_rcbo',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">LS-Schalter B16 (1-polig – Keller/Licht)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('zv_b16_1p',-1)">−</button><input type="tel" id="zv_b16_1p" value="0" class="elec-input" onclick="this.select()" oninput="storage['zv_b16_1p']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('zv_b16_1p',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">LS-Schalter B16 (3-polig – z.B. Heizung)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('zv_b16_3p',-1)">−</button><input type="tel" id="zv_b16_3p" value="0" class="elec-input" onclick="this.select()" oninput="storage['zv_b16_3p']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('zv_b16_3p',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">LS-Schalter C16 / C32 (Wärmepumpe/Werkstatt)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('zv_c_typ',-1)">−</button><input type="tel" id="zv_c_typ" value="0" class="elec-input" onclick="this.select()" oninput="storage['zv_c_typ']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('zv_c_typ',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">Stromstoßschalter / Treppenlicht-ZS</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('zv_eltako',-1)">−</button><input type="tel" id="zv_eltako" value="0" class="elec-input" onclick="this.select()" oninput="storage['zv_eltako']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('zv_eltako',1)">+</button></div></div>
+        <button class="btn btn-photo" style="margin-top:12px;" onclick="addPhoto('Z_SCHRANK')">📸 Foto Z-Schrank (<span id="count_Z_SCHRANK">0</span>)</button>
+      </div>
+    </div>
+
+    <div class="room-accordion">
+      <div class="room-header-bar" onclick="toggleLocalAccordion('body_UV_ACC')">
+        <span>🔌 Unterverteilung (UV)</span><span id="mark_UV" class="done-mark"></span>
+      </div>
+      <div id="body_UV_ACC" class="room-body" style="display:none;">
+        <div class="elec-section-head">Gehäuse</div>
+        <div class="field"><label>Verteiler-Größe (Reihen)</label>
+          <select id="uv_rows" onchange="storage['uv_rows']=this.value; elecChanged()">
+            <option value="0">Keine UV (Nur Zählerfeld)</option><option value="1">1-reihig</option><option value="2">2-reihig</option>
+            <option value="3" selected>3-reihig (Standard Wohnung)</option><option value="4">4-reihig</option><option value="5">5-reihig</option>
+          </select>
+        </div>
+        <div class="elec-row"><div class="elec-label">Hauptschalter / Lasttrennschalter (UV)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_haupt',-1)">−</button><input type="tel" id="uv_haupt" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_haupt']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_haupt',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">Überspannungsschutz (SPD Typ 2)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_spd',-1)">−</button><input type="tel" id="uv_spd" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_spd']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_spd',1)">+</button></div></div>
+        <div class="elec-section-head">Schutzschalter</div>
+        <div class="elec-row"><div class="elec-label">FI-Schutzschalter (RCD) 4-polig</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_fi4',-1)">−</button><input type="tel" id="uv_fi4" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_fi4']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_fi4',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">FI-Schutzschalter (RCD) 2-polig</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_fi2',-1)">−</button><input type="tel" id="uv_fi2" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_fi2']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_fi2',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">FI/LS Kombischalter (RCBO)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_rcbo',-1)">−</button><input type="tel" id="uv_rcbo" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_rcbo']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_rcbo',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">LS-Schalter B16 (1-polig)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_b16_1p',-1)">−</button><input type="tel" id="uv_b16_1p" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_b16_1p']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_b16_1p',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">LS-Schalter B16 (3-polig – Herd)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_b16_3p',-1)">−</button><input type="tel" id="uv_b16_3p" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_b16_3p']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_b16_3p',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">LS-Schalter B32 (3-polig)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_b32_3p',-1)">−</button><input type="tel" id="uv_b32_3p" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_b32_3p']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_b32_3p',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">LS-Schalter C16 / C32 (Träge)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_c_typ',-1)">−</button><input type="tel" id="uv_c_typ" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_c_typ']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_c_typ',1)">+</button></div></div>
+        <div class="elec-section-head">Steuerung &amp; Sonstiges</div>
+        <div class="elec-row"><div class="elec-label">Stromstoßschalter / Eltako</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_eltako',-1)">−</button><input type="tel" id="uv_eltako" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_eltako']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_eltako',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">Treppenlicht-Zeitschalter</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_treppen',-1)">−</button><input type="tel" id="uv_treppen" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_treppen']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_treppen',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">Klingeltransformator</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_trafo',-1)">−</button><input type="tel" id="uv_trafo" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_trafo']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_trafo',1)">+</button></div></div>
+        <div class="elec-row"><div class="elec-label">Zeitschaltuhr (analog/digital)</div><div class="elec-controls"><button class="btn-elec" onclick="elecChangeVal('uv_uhr',-1)">−</button><input type="tel" id="uv_uhr" value="0" class="elec-input" onclick="this.select()" oninput="storage['uv_uhr']=this.value; elecChanged()"><button class="btn-elec" onclick="elecChangeVal('uv_uhr',1)">+</button></div></div>
+        <button class="btn btn-photo" style="margin-top:12px;" onclick="addPhoto('UV')">📸 Foto UV (<span id="count_UV">0</span>)</button>
+      </div>
+    </div>
+
+    <div style="display:-webkit-flex; display:flex; gap:10px; margin-top:20px;">
+      <button class="btn btn-primary" style="background:#64748b; -webkit-flex:1; flex:1;" onclick="goToStep('stepSurvey')">← Zurück</button>
+      <button class="btn btn-primary" style="-webkit-flex:2; flex:2;" onclick="finalize()">Zum Abschluss →</button>
+    </div>
+  </div>
+
+  <!-- ========== ABSCHLUSS ========== -->
+  <div class="step" id="stepFinal">
+    <div class="nav-info">ABSCHLUSS</div>
+    <div class="card"><h4>📦 Gesamtliste</h4><div id="totalMaterialContent" class="summary-box"></div></div>
+    <div id="finalDetails" class="card"></div>
+    <div class="card"><textarea id="finalNotes" rows="3" placeholder="Zusätzliche Notizen..." style="font-size:16px;"></textarea></div>
+    <div class="card">
+      <button class="btn btn-primary" style="background:#f59e0b;" onclick="downloadAllPhotos()">📸 Fotos runterladen</button>
+      <button class="btn btn-primary" style="background:#6366f1;" onclick="exportBackup()">📂 Backup (TXT)</button>
+    </div>
+    <button class="btn btn-success" onclick="sendEmail()">📧 E-Mail senden</button>
+    <button class="btn btn-danger" onclick="confirmReset()">🔄 App zurücksetzen (Alles löschen)</button>
+  </div>
+</div>
+
+<script>
+// ── Materialien ──────────────────────────────────────────────
+const MAT_FULL = [
+  {k:'sch',l:'Schalter'},{k:'ssch',l:'Serien-Sch'},{k:'ksch',l:'Kontroll-Sch'},
+  {k:'tas',l:'Taster'},{k:'dim',l:'Dimmer'},{k:'roll',l:'Rolladen-Sch'},
+  {k:'sd',l:'Steckdose'},{k:'ksd',l:'Klapp-SD'},
+  {k:'ther',l:'Thermostat'},
+  {k:'nw',l:'Netzwerk'},{k:'ant',l:'Antenne'},{k:'tae',l:'TAE-Dose'},
+  {k:'r1',l:'Rahmen 1-f'},{k:'r2',l:'Rahmen 2-f'},{k:'r3',l:'Rahmen 3-f'},{k:'r4',l:'Rahmen 4-f'},{k:'r5',l:'Rahmen 5-f'}
+];
+const MAT_WET = [
+  {k:'sch',l:'Schalter'},{k:'sd',l:'Steckdose'},{k:'ksd',l:'Klapp-SD'},{k:'fisd',l:'FI-Steckdose'},{k:'ther',l:'Thermostat'},
+  {k:'r1',l:'Rahmen 1-f'},{k:'r2',l:'Rahmen 2-f'},{k:'r3',l:'Rahmen 3-f'},{k:'r4',l:'Rahmen 4-f'},{k:'r5',l:'Rahmen 5-f'}
+];
+const MAT_OUT = [
+  {k:'sch',l:'Schalter'},{k:'sd',l:'Steckdose'},{k:'ksd',l:'Klapp-SD'},{k:'asd',l:'Außen-SD'},
+  {k:'r1',l:'Rahmen 1-f'},{k:'r2',l:'Rahmen 2-f'},{k:'r3',l:'Rahmen 3-f'},{k:'r4',l:'Rahmen 4-f'},{k:'r5',l:'Rahmen 5-f'}
+];
+
+let etappen = [], currentIdx = 0, storage = {}, roomPhotos = {}, extraKellerCount = 0, activeRoomId = null;
+
+// ── Datum-Selects befüllen ────────────────────────────────────
+window.addEventListener('load', function() {
+  var today = new Date();
+  // Tage
+  var tagSel = document.getElementById('datTag');
+  for(var d=1; d<=31; d++) {
+    var o = document.createElement('option');
+    o.value = (d<10?'0':'')+d; o.textContent = d;
+    if(d === today.getDate()) o.selected = true;
+    tagSel.appendChild(o);
+  }
+  // Jahre
+  var jahrSel = document.getElementById('datJahr');
+  for(var y=today.getFullYear(); y<=today.getFullYear()+1; y++) {
+    var o2 = document.createElement('option');
+    o2.value = y; o2.textContent = y;
+    if(y === today.getFullYear()) o2.selected = true;
+    jahrSel.appendChild(o2);
+  }
+  // Monat vorauswählen
+  document.getElementById('datMonat').value = (today.getMonth()+1 < 10 ? '0' : '') + (today.getMonth()+1);
+  toggleTyp();
+});
+
+// ── Stammdaten ────────────────────────────────────────────────
+function toggleTyp() {
+  var isWohnung = document.getElementById('objektTyp').value === 'wohnung';
+  document.getElementById('wohnungFields').style.display = isWohnung ? 'block' : 'none';
+  document.getElementById('hausFields').style.display = isWohnung ? 'none' : 'block';
+  document.getElementById('lageWohnungField').style.display = isWohnung ? 'block' : 'none';
+  document.getElementById('lageWohnung').style.border = '';
+  document.getElementById('validationError').style.display = 'none';
+}
+
+function validateAndStart() {
+  var valid = true;
+  var fixedIds = ['auftragsNummer', 'monteurName', 'strasse', 'stadt'];
+  for(var i=0; i<fixedIds.length; i++) {
+    var el = document.getElementById(fixedIds[i]);
+    if(!el.value || !el.value.trim()) {
+      el.style.border = '2px solid #ef4444';
+      el.style.backgroundColor = '#fef2f2';
+      valid = false;
+    } else {
+      el.style.border = '';
+      el.style.backgroundColor = '';
+    }
+  }
+  var isWohnung = document.getElementById('objektTyp').value === 'wohnung';
+  var lageEl = document.getElementById('lageWohnung');
+  if(isWohnung && (!lageEl.value || !lageEl.value.trim())) {
+    lageEl.style.border = '2px solid #ef4444';
+    lageEl.style.backgroundColor = '#fef2f2';
+    valid = false;
+  } else {
+    lageEl.style.border = '';
+    lageEl.style.backgroundColor = '';
+  }
+  if(!valid) {
+    document.getElementById('validationError').style.display = 'block';
+    return;
+  }
+  document.getElementById('validationError').style.display = 'none';
+  startSurvey();
+}
+
+function startSurvey() {
+  buildEtappen(); currentIdx = 0; activeRoomId = null;
+  document.getElementById('tab_stepSurvey').classList.remove('locked');
+  document.getElementById('tab_stepElec').classList.remove('locked');
+  document.getElementById('tab_stepFinal').classList.remove('locked');
+  buildEtappenNav(); showEtappe(true); goToStep('stepSurvey');
+}
+
+// ── Etappen aufbauen ──────────────────────────────────────────
+function buildEtappen() {
+  etappen = [];
+  var typ = document.getElementById('objektTyp').value;
+  if(typ === 'wohnung') {
+    var r = [{id:'W_FL',l:'Flur',m:'full'},{id:'W_BA',l:'Bad',m:'wet'},{id:'W_KU',l:'Küche',m:'kitchen'}];
+    r.push({id:'W_GWC',l:'Gäste-WC',m:'wet',opt:true});
+    var zAnz = parseInt(document.getElementById('zimmerAnzahl').value);
+    for(var i=1;i<=zAnz;i++) r.push({id:'W_Z'+i,l:'Zimmer '+i,m:'full'});
+    etappen.push({t:'Wohnung',rooms:r});
+  } else {
+    var ogsEl = document.getElementById('ogAnzahl'); var ogs = parseInt(ogsEl ? ogsEl.value : storage['ogAnzahl'] || 2);
+    var zPEl = document.getElementById('zimmerProEtage'); var zP = parseInt(zPEl ? zPEl.value : storage['zimmerProEtage']) || 3;
+    for(var i=0;i<=ogs;i++) {
+      var et = i===0?'EG':i+'.OG';
+      var r = [{id:et+'_FL',l:et+' Flur',m:'full'},{id:et+'_BA',l:et+' Bad',m:'wet'}];
+      r.push({id:et+'_KU',l:et+' Küche',m:'kitchen',opt:(i>0)});
+      r.push({id:et+'_GWC',l:et+' Gäste-WC',m:'wet',opt:true});
+      for(var j=1;j<=zP;j++) r.push({id:et+'_Z'+j,l:et+' Zimmer '+j,m:'full'});
+      etappen.push({t:et,rooms:r});
+    }
+  }
+  if(document.getElementById('hasKeller').checked) {
+    etappen.push({t:'Keller',rooms:[{id:'K_R1',l:'Kellerraum 1',m:'full'},{id:'K_HZ',l:'Heizung',m:'full',opt:true},{id:'K_WK',l:'Waschküche',m:'full',opt:true}],isKeller:true});
+  }
+  var ex = [];
+  if(document.getElementById('hasBalkon').checked) ex.push({id:'BALK',l:'Balkon',m:'out'});
+  if(document.getElementById('hasTerrasse').checked) ex.push({id:'TERR',l:'Terrasse',m:'out'});
+  if(document.getElementById('hasGarage').checked) ex.push({id:'GARA',l:'Garage',m:'out'});
+  if(ex.length>0) etappen.push({t:'Außen',rooms:ex});
+}
+
+function buildEtappenNav() {
+  var nav = document.getElementById('etappenNav'); nav.innerHTML = '';
+  for(var i=0;i<etappen.length;i++) {
+    (function(idx){
+      var et = etappen[idx];
+      var activeRooms = et.rooms.filter(function(r){ return !r.opt || storage[r.id+'_active']==='true'; });
+      var isEtDone = activeRooms.length>0 && activeRooms.every(function(r){ return isRoomDone(r); });
+      var btn = document.createElement('button');
+      btn.className = 'et-btn'+(idx===currentIdx?' active':'')+(isEtDone?' done':'');
+      btn.textContent = (isEtDone?'✓ ':'')+et.t;
+      btn.onclick = function(){ currentIdx=idx; activeRoomId=null; buildEtappenNav(); showEtappe(true); };
+      nav.appendChild(btn);
+    })(i);
+  }
+}
+
+function showEtappe(resetScroll) {
+  var et = etappen[currentIdx];
+  if(!et) return;
+  document.getElementById('currentEtappeTitle').innerText = et.t;
+  var cont = document.getElementById('surveyContainer');
+  cont.innerHTML = ''; document.getElementById('dynamicKellerArea').innerHTML = '';
+  for(var i=0;i<et.rooms.length;i++) {
+    var r = et.rooms[i];
+    if(r.opt && storage[r.id+'_active']!=='true') {
+      cont.innerHTML += '<button class="btn btn-opt" onclick="storage[\''+r.id+'_active\']=\'true\'; showEtappe();">+ '+r.l+'</button>';
+    } else {
+      cont.innerHTML += renderRoomAccordion(r);
+    }
+  }
+  if(et.isKeller && extraKellerCount<4) {
+    document.getElementById('dynamicKellerArea').innerHTML = '<button class="btn btn-opt" style="background:#64748b;color:white;" onclick="addAnotherKeller()">+ Weiterer Kellerraum</button>';
+  }
+  if(resetScroll) window.scrollTo(0,0);
+}
+
+function getMatList(r) {
+  if(r.m==='wet') return MAT_WET;
+  if(r.m==='out') return MAT_OUT;
+  if(r.m==='kitchen') return MAT_FULL.concat([{k:'fisd',l:'FI-Steckdose'},{k:'her',l:'Herd'}]);
+  return MAT_FULL;
+}
+
+function renderRoomAccordion(r) {
+  var done = isRoomDone(r);
+  var isOpen = activeRoomId === r.id;
+  var list = getMatList(r);
+  var matHtml = '';
+  for(var i=0;i<list.length;i++) {
+    var m = list[i];
+    matHtml += '<div class="material-item"><label>'+m.l+'</label>'
+      +'<input type="tel" value="'+(storage[r.id+'_'+m.k]||0)+'" onclick="this.select()" '
+      +'onchange="storage[\''+r.id+'_'+m.k+'\']=this.value; updateGlobalProgress(\''+r.id+'\')"></div>';
+  }
+  var okActive = storage[r.id+'_ok'] ? 'active' : '';
+  var okText = storage[r.id+'_ok'] ? 'ALLES OK ✓' : 'Nichts zu tun / OK';
+  return '<div class="room-accordion">'
+    +'<div class="room-header-bar" onclick="toggleRoom(\''+r.id+'\')">'
+    +'<span>'+r.l+'</span><span class="done-mark">'+(done?'✅':'')+'</span></div>'
+    +'<div id="body_'+r.id+'" class="room-body'+(isOpen?' active':'')+'">'
+    +'<button class="btn btn-ok '+okActive+'" onclick="storage[\''+r.id+'_ok\']=!storage[\''+r.id+'_ok\']; updateGlobalProgress(\''+r.id+'\'); showEtappe();">'+okText+'</button>'
+    +'<div class="material-grid">'+matHtml+'</div>'
+    +'<button class="btn btn-photo" onclick="addPhoto(\''+r.id+'\')">📸 Foto ('+(roomPhotos[r.id]||[]).length+')</button>'
+    +'</div></div>';
+}
+
+function isRoomDone(r) {
+  if(storage[r.id+'_ok']) return true;
+  var list = getMatList(r);
+  for(var i=0;i<list.length;i++) {
+    if(parseInt(storage[r.id+'_'+list[i].k])>0) return true;
+  }
+  return roomPhotos[r.id] && roomPhotos[r.id].length>0;
+}
+
+function updateGlobalProgress(rid) {
+  buildEtappenNav();
+  var allRooms = [];
+  for(var i=0;i<etappen.length;i++) {
+    var rooms = etappen[i].rooms.filter(function(r){ return !r.opt || storage[r.id+'_active']==='true'; });
+    for(var j=0;j<rooms.length;j++) allRooms.push(rooms[j]);
+  }
+  var surveyDone = allRooms.length>0 && allRooms.every(function(r){ return isRoomDone(r); });
+  document.getElementById('check_tab_Survey').innerText = surveyDone ? '✅' : '';
+
+  var zvKeys = ['z_count','zv_rows','zv_spd','zv_haupt','zv_fi4','zv_fi2','zv_rcbo','zv_b16_1p','zv_b16_3p','zv_c_typ','zv_eltako'];
+  var zDone = (roomPhotos['Z_SCHRANK']||[]).length>0;
+  for(var k=0;k<zvKeys.length;k++) if(parseInt(storage[zvKeys[k]])>0){ zDone=true; break; }
+
+  var uvKeys = ['uv_rows','uv_haupt','uv_spd','uv_fi4','uv_fi2','uv_rcbo','uv_b16_1p','uv_b16_3p','uv_b32_3p','uv_c_typ','uv_eltako','uv_treppen','uv_trafo','uv_uhr'];
+  var uvDone = (roomPhotos['UV']||[]).length>0;
+  for(var k=0;k<uvKeys.length;k++) if(parseInt(storage[uvKeys[k]])>0){ uvDone=true; break; }
+
+  var elecDone = zDone && uvDone;
+  document.getElementById('check_tab_Elec').innerText = elecDone ? '✅' : '';
+  document.getElementById('mark_Z_SCHRANK').innerText = zDone ? '✅' : '';
+  document.getElementById('mark_UV').innerText = uvDone ? '✅' : '';
+  document.getElementById('count_Z_SCHRANK').innerText = (roomPhotos['Z_SCHRANK']||[]).length;
+  document.getElementById('count_UV').innerText = (roomPhotos['UV']||[]).length;
+
+  var surveyCheck = document.getElementById('check_tab_Survey').innerText.trim();
+  var elecCheck = document.getElementById('check_tab_Elec').innerText.trim();
+  document.getElementById('check_tab_Final').innerText = (surveyCheck==='✅'&&elecCheck==='✅') ? '✅' : '';
+}
+
+function toggleRoom(id) { activeRoomId = (activeRoomId===id) ? null : id; showEtappe(); }
+function toggleLocalAccordion(id) {
+  var el = document.getElementById(id);
+  el.style.display = (el.style.display==='block') ? 'none' : 'block';
+}
+
+// ── Foto mit Canvas-Wasserzeichen ─────────────────────────────
+function addPhoto(rid) {
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = function(e) {
+    if(!e.target.files || !e.target.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var img = new Image();
+      img.onload = function() {
+        // Canvas in Originalgröße
+        var canvas = document.createElement('canvas');
+        canvas.width  = img.width;
+        canvas.height = img.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        // Wasserzeichen-Einstellungen
+        var pad    = Math.round(img.width * 0.02);   // 2% Abstand vom Rand
+        var fSize  = Math.round(img.width * 0.035);  // 3.5% der Breite
+        ctx.font        = 'bold ' + fSize + 'px Arial, sans-serif';
+        ctx.textBaseline = 'bottom';
+
+        // Raumname ermitteln
+        var roomLabel = rid;
+        if(rid === 'Z_SCHRANK') roomLabel = 'Zählerschrank';
+        else if(rid === 'UV')   roomLabel = 'Unterverteilung';
+        else {
+          // Etappen nach Label durchsuchen
+          for(var i=0; i<etappen.length; i++) {
+            for(var j=0; j<etappen[i].rooms.length; j++) {
+              if(etappen[i].rooms[j].id === rid) { roomLabel = etappen[i].rooms[j].l; break; }
+            }
+          }
+        }
+
+        // Datum aus den Selects
+        var datum = document.getElementById('datTag').value + '.'
+                  + document.getElementById('datMonat').value + '.'
+                  + document.getElementById('datJahr').value;
+
+        var textLinks  = roomLabel + '  |  ' + datum;
+        var textRechts = 'Auftrag: ' + (document.getElementById('auftragsNummer').value || '–');
+
+        var y = img.height - pad;
+
+        // Schatten für Lesbarkeit auf jedem Hintergrund
+        function drawWatermark(text, x, align) {
+          ctx.textAlign = align;
+          // dunkler Schatten
+          ctx.fillStyle   = 'rgba(0,0,0,0.65)';
+          ctx.shadowColor = 'rgba(0,0,0,0)';
+          ctx.fillText(text, x + 2, y + 2);
+          // weißer Text
+          ctx.fillStyle   = 'rgba(255,255,255,0.92)';
+          ctx.fillText(text, x, y);
+        }
+
+        drawWatermark(textLinks,  pad,              'left');
+        drawWatermark(textRechts, img.width - pad,  'right');
+
+        // Als JPEG speichern (0.88 Qualität = guter Kompromiss)
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        if(!roomPhotos[rid]) roomPhotos[rid] = [];
+        roomPhotos[rid].push(dataUrl);
+        updateGlobalProgress(rid);
+        if(rid !== 'Z_SCHRANK' && rid !== 'UV') showEtappe();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(e.target.files[0]);
+  };
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(function(){ document.body.removeChild(input); }, 1000);
+}
+
+function addAnotherKeller() {
+  extraKellerCount++;
+  etappen.find(function(e){ return e.isKeller; }).rooms.push({id:'K_RX_'+extraKellerCount,l:'Kellerraum '+(extraKellerCount+1),m:'full'});
+  showEtappe();
+}
+
+function nextEtappe() {
+  if(currentIdx<etappen.length-1){ currentIdx++; buildEtappenNav(); showEtappe(true); }
+  else goToStep('stepElec');
+}
+
+function universalBack() {
+  var cur = document.querySelector('.step.active').id;
+  if(cur==='stepFinal') goToStep('stepElec');
+  else if(cur==='stepElec') goToStep('stepSurvey');
+  else if(cur==='stepSurvey') {
+    if(currentIdx>0){ currentIdx--; buildEtappenNav(); showEtappe(true); }
+    else goToStep('step1');
+  }
+}
+
+// ── Abschluss ─────────────────────────────────────────────────
+function finalize() {
+  var totals = {}, resRooms = '';
+  var zvSls = storage['zv_sls'] || document.getElementById('zv_sls').value || '';
+  var zvMainFields = [['z_count','Zählerplätze'],['zv_spd','Kombi-Ableiter SPD'],['zv_haupt','Hauptschalter ZV']];
+  var zvParts = [];
+  if(zvSls && zvSls!=='Kein') zvParts.push('SLS '+zvSls);
+  for(var i=0;i<zvMainFields.length;i++) if(parseInt(storage[zvMainFields[i][0]])>0) zvParts.push(zvMainFields[i][1]+': '+storage[zvMainFields[i][0]]);
+  resRooms += '<div class="summary-box"><b>⚡ Zählerschrank (ZV):</b> '+(zvParts.join(', ')||'–')+' <i>('+(roomPhotos['Z_SCHRANK']||[]).length+' F)</i></div>';
+  var zvSfFields = [['zv_fi4','FI 4-pol'],['zv_fi2','FI 2-pol'],['zv_rcbo','RCBO'],['zv_b16_1p','B16 1-pol'],['zv_b16_3p','B16 3-pol'],['zv_c_typ','C-Typ'],['zv_eltako','Eltako/Treppenlicht']];
+  var zvSfParts = [];
+  if(parseInt(storage['zv_rows'])>0) zvSfParts.push(storage['zv_rows']+'-reihig');
+  for(var i=0;i<zvSfFields.length;i++) if(parseInt(storage[zvSfFields[i][0]])>0) zvSfParts.push(zvSfFields[i][1]+': '+storage[zvSfFields[i][0]]);
+  if(zvSfParts.length>0) resRooms += '<div class="summary-box"><b>🔧 ZV-Sicherungsfeld (Keller/Haustechnik):</b> '+zvSfParts.join(', ')+'</div>';
+
+  var uvFields = [['uv_rows','Reihen'],['uv_haupt','Hauptschalter UV'],['uv_spd','SPD Typ 2'],['uv_fi4','FI 4-pol'],['uv_fi2','FI 2-pol'],['uv_rcbo','RCBO'],['uv_b16_1p','B16 1-pol'],['uv_b16_3p','B16 3-pol (Herd)'],['uv_b32_3p','B32 3-pol'],['uv_c_typ','C-Typ'],['uv_eltako','Eltako'],['uv_treppen','Treppenlicht-ZS'],['uv_trafo','Klingel-Trafo'],['uv_uhr','Zeitschaltuhr']];
+  var uvParts = [];
+  for(var i=0;i<uvFields.length;i++) if(parseInt(storage[uvFields[i][0]])>0) uvParts.push(uvFields[i][1]+': '+storage[uvFields[i][0]]);
+  resRooms += '<div class="summary-box"><b>🔌 Unterverteilung (UV):</b> '+(uvParts.join(', ')||'–')+' <i>('+(roomPhotos['UV']||[]).length+' F)</i></div>';
+
+  for(var ei=0;ei<etappen.length;ei++) {
+    var et = etappen[ei];
+    for(var ri=0;ri<et.rooms.length;ri++) {
+      var r = et.rooms[ri]; var rT = '';
+      var list = getMatList(r);
+      for(var mi=0;mi<list.length;mi++) {
+        var v = parseInt(storage[r.id+'_'+list[mi].k])||0;
+        if(v>0){ rT+=list[mi].l+': '+v+', '; totals[list[mi].l]=(totals[list[mi].l]||0)+v; }
+      }
+      if(storage[r.id+'_ok'] && !rT) rT='OK';
+      if(rT||(roomPhotos[r.id]||[]).length>0) resRooms+='<div class="summary-box"><b>'+r.l+':</b> '+(rT||'Nur Foto')+' <i>('+(roomPhotos[r.id]||[]).length+' F)</i></div>';
+    }
+  }
+  var totalText='', grandTotal=0;
+  for(var m in totals){ totalText+='<b>'+m+':</b> '+totals[m]+'<br>'; grandTotal+=totals[m]; }
+  if(grandTotal>0) totalText+='<div style="margin-top:8px;padding-top:8px;border-top:2px solid #cbd5e1;font-size:16px;"><b>📦 GESAMT: '+grandTotal+' Teile</b></div>';
+  document.getElementById('totalMaterialContent').innerHTML = totalText||'Kein Material';
+  document.getElementById('finalDetails').innerHTML = resRooms;
+  goToStep('stepFinal');
+}
+
+function getDateString() {
+  return document.getElementById('datTag').value+'.'+document.getElementById('datMonat').value+'.'+document.getElementById('datJahr').value;
+}
+
+function downloadAllPhotos() {
+  for(var rid in roomPhotos) {
+    for(var i=0;i<roomPhotos[rid].length;i++) {
+      var a=document.createElement('a'); a.href=roomPhotos[rid][i]; a.download=rid+'_'+(i+1)+'.jpg'; a.click();
+    }
+  }
+}
+
+function exportBackup() {
+  var blob = new Blob([JSON.stringify({storage:storage,roomPhotos:roomPhotos},null,2)],{type:'text/plain'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Backup_'+document.getElementById('strasse').value+'.txt'; a.click();
+}
+
+function sendEmail() {
+  var auftrag = document.getElementById('auftragsNummer').value;
+  var lage = document.getElementById('lageWohnung').value ? '\nLage: '+document.getElementById('lageWohnung').value : '';
+  var datum = getDateString();
+  var body = 'STAMMDATEN:\nDatum: '+datum+'\nAuftrag: '+auftrag+'\nMonteur: '+document.getElementById('monteurName').value+'\nAnschrift: '+document.getElementById('strasse').value+', '+document.getElementById('stadt').value+lage+'\n\n';
+  body += 'GESAMTMATERIAL:\n'+document.getElementById('totalMaterialContent').innerText+'\n\nDETAILS:\n'+document.getElementById('finalDetails').innerText+'\n\nNOTIZEN:\n'+document.getElementById('finalNotes').value;
+  window.location.href = 'mailto:ansgar.seine@googlemail.com?subject=Aufnahme_'+encodeURIComponent(auftrag)+'&body='+encodeURIComponent(body);
+}
+
+function goToStep(id) {
+  var steps = document.querySelectorAll('.step');
+  for(var i=0;i<steps.length;i++) steps[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  document.getElementById('topBackBtn').style.display = id==='step1'?'none':'block';
+  var tabs = document.querySelectorAll('.tab-btn');
+  for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-step')===id);
+  if(id==='stepElec') restoreElecFields();
+  updateGlobalProgress();
+  window.scrollTo(0,0);
+}
+
+function restoreElecFields() {
+  var ids = ['z_count','zv_sls','zv_rows','zv_spd','zv_haupt','zv_fi4','zv_fi2','zv_rcbo','zv_b16_1p','zv_b16_3p','zv_c_typ','zv_eltako','uv_rows','uv_haupt','uv_spd','uv_fi4','uv_fi2','uv_rcbo','uv_b16_1p','uv_b16_3p','uv_b32_3p','uv_c_typ','uv_eltako','uv_treppen','uv_trafo','uv_uhr','uv_rows','uv_haupt','uv_spd','uv_fi4','uv_fi2','uv_rcbo','uv_b16_1p','uv_b16_3p','uv_b32_3p','uv_c_typ','uv_eltako','uv_treppen','uv_trafo','uv_uhr'];
+  for(var i=0;i<ids.length;i++) {
+    var el=document.getElementById(ids[i]);
+    if(el && storage[ids[i]]!==undefined) el.value=storage[ids[i]];
+  }
+}
+
+function elecChangeVal(id, amount) {
+  var el = document.getElementById(id);
+  var newVal = Math.max(0,(parseInt(el.value)||0)+amount);
+  el.value = newVal; storage[id] = newVal; elecChanged();
+}
+function elecChanged() { updateGlobalProgress(); }
+
+function tabClick(stepId) {
+  if(document.getElementById('tab_'+stepId).classList.contains('locked')) return;
+  if(stepId==='stepFinal'){ finalize(); return; }
+  goToStep(stepId);
+}
+
+function confirmReset() {
+  if(confirm('Möchten Sie wirklich alle Daten löschen und die App zurücksetzen?')) window.location.reload();
+}
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+</body>
+</html>
