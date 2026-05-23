@@ -101,10 +101,7 @@
   <div class="tab-bar" id="tabBar">
     <button class="tab-btn active" id="tab_step1" data-step="step1" onclick="tabClick('step1')">📋 Stammdaten</button>
     <button class="tab-btn locked" id="tab_stepSurvey" data-step="stepSurvey" onclick="tabClick('stepSurvey')">🏠 Aufnahme <span id="check_tab_Survey"></span></button>
-<<<<<<< HEAD
-=======
     <button class="tab-btn locked" id="tab_stepTreppenhaus" data-step="stepTreppenhaus" onclick="tabClick('stepTreppenhaus')" style="display:none;">🪜 Treppenhaus <span id="check_tab_Treppenhaus"></span></button>
->>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
     <button class="tab-btn locked" id="tab_stepElec" data-step="stepElec" onclick="tabClick('stepElec')">⚡ Elektr. Anlage <span id="check_tab_Elec"></span></button>
     <button class="tab-btn locked" id="tab_stepFinal" data-step="stepFinal" onclick="tabClick('stepFinal')">✅ Abschluss <span id="check_tab_Final"></span></button>
   </div>
@@ -181,6 +178,107 @@
     <div style="display:-webkit-flex; display:flex; gap:10px; margin-top:20px;">
       <button class="btn btn-primary" style="background:#64748b; -webkit-flex:1; flex:1;" onclick="universalBack()">← Zurück</button>
       <button class="btn btn-primary" style="-webkit-flex:2; flex:2;" onclick="nextEtappe()">Weiter →</button>
+    </div>
+  </div>
+
+  <!-- ========== TREPPENHAUS (nur Haus) ========== -->
+  <div class="step" id="stepTreppenhaus">
+    <div class="nav-info">🪜 TREPPENHAUS</div>
+
+    <!-- Keller -->
+    <div class="room-accordion">
+      <div class="room-header-bar" onclick="toggleTHAccordion('th_body_keller', this)">
+        <span>🏚️ Keller</span><span class="done-mark" id="th_done_keller"></span>
+      </div>
+      <div id="th_body_keller" class="room-body">
+        <div class="elec-section-head">Schalter &amp; Taster</div>
+        <div class="material-grid">
+          <div class="material-item"><label>Taster Licht</label><input type="tel" id="th_k_taster" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Kontrollschalter</label><input type="tel" id="th_k_kontroll" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Steckdose</label><input type="tel" id="th_k_sd" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+        </div>
+        <div class="elec-section-head">Rahmen</div>
+        <div class="material-grid">
+          <div class="material-item"><label>Rahmen 1-fach</label><input type="tel" id="th_k_r1" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Rahmen 2-fach</label><input type="tel" id="th_k_r2" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Rahmen 3-fach</label><input type="tel" id="th_k_r3" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+        </div>
+        <button class="btn btn-ok" id="th_ok_keller" onclick="toggleTHOk('keller')">Nichts zu tun / OK</button>
+      </div>
+    </div>
+
+    <!-- EG -->
+    <div class="room-accordion">
+      <div class="room-header-bar" onclick="toggleTHAccordion('th_body_eg', this)">
+        <span>🏠 Erdgeschoss (EG)</span><span class="done-mark" id="th_done_eg"></span>
+      </div>
+      <div id="th_body_eg" class="room-body">
+        <div class="elec-section-head">Schalter &amp; Taster</div>
+        <div class="material-grid">
+          <div class="material-item"><label>Etagentaster</label><input type="tel" id="th_eg_etage" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Taster Licht</label><input type="tel" id="th_eg_licht" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Kontrollschalter</label><input type="tel" id="th_eg_kontroll" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Steckdose</label><input type="tel" id="th_eg_sd" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+        </div>
+        <div class="elec-section-head">Rahmen</div>
+        <div class="material-grid">
+          <div class="material-item"><label>Rahmen 1-fach</label><input type="tel" id="th_eg_r1" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Rahmen 2-fach</label><input type="tel" id="th_eg_r2" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Rahmen 3-fach</label><input type="tel" id="th_eg_r3" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+        </div>
+        <button class="btn btn-ok" id="th_ok_eg" onclick="toggleTHOk('eg')">Nichts zu tun / OK</button>
+      </div>
+    </div>
+
+    <!-- 1. OG -->
+    <div class="room-accordion">
+      <div class="room-header-bar" onclick="toggleTHAccordion('th_body_1og', this)">
+        <span>🏠 1. Obergeschoss (1. OG)</span><span class="done-mark" id="th_done_1og"></span>
+      </div>
+      <div id="th_body_1og" class="room-body">
+        <div class="elec-section-head">Schalter &amp; Taster</div>
+        <div class="material-grid">
+          <div class="material-item"><label>Etagentaster</label><input type="tel" id="th_1og_etage" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Taster Licht</label><input type="tel" id="th_1og_licht" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Kontrollschalter</label><input type="tel" id="th_1og_kontroll" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Steckdose</label><input type="tel" id="th_1og_sd" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+        </div>
+        <div class="elec-section-head">Rahmen</div>
+        <div class="material-grid">
+          <div class="material-item"><label>Rahmen 1-fach</label><input type="tel" id="th_1og_r1" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Rahmen 2-fach</label><input type="tel" id="th_1og_r2" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Rahmen 3-fach</label><input type="tel" id="th_1og_r3" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+        </div>
+        <button class="btn btn-ok" id="th_ok_1og" onclick="toggleTHOk('1og')">Nichts zu tun / OK</button>
+      </div>
+    </div>
+
+    <!-- 2. OG (optional, nur bei 2-OG-Haus) -->
+    <div class="room-accordion" id="th_section_2og" style="display:none;">
+      <div class="room-header-bar" onclick="toggleTHAccordion('th_body_2og', this)">
+        <span>🏠 2. Obergeschoss (2. OG)</span><span class="done-mark" id="th_done_2og"></span>
+      </div>
+      <div id="th_body_2og" class="room-body">
+        <div class="elec-section-head">Schalter &amp; Taster</div>
+        <div class="material-grid">
+          <div class="material-item"><label>Etagentaster</label><input type="tel" id="th_2og_etage" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Taster Licht</label><input type="tel" id="th_2og_licht" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Kontrollschalter</label><input type="tel" id="th_2og_kontroll" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Steckdose</label><input type="tel" id="th_2og_sd" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+        </div>
+        <div class="elec-section-head">Rahmen</div>
+        <div class="material-grid">
+          <div class="material-item"><label>Rahmen 1-fach</label><input type="tel" id="th_2og_r1" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Rahmen 2-fach</label><input type="tel" id="th_2og_r2" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+          <div class="material-item"><label>Rahmen 3-fach</label><input type="tel" id="th_2og_r3" value="0" onclick="this.select()" oninput="saveTH(); updateTHProgress()"></div>
+        </div>
+        <button class="btn btn-ok" id="th_ok_2og" onclick="toggleTHOk('2og')">Nichts zu tun / OK</button>
+      </div>
+    </div>
+
+    <div style="display:-webkit-flex; display:flex; gap:10px; margin-top:20px;">
+      <button class="btn btn-primary" style="background:#64748b; -webkit-flex:1; flex:1;" onclick="goToStep('stepSurvey')">← Zurück</button>
+      <button class="btn btn-primary" style="-webkit-flex:2; flex:2;" onclick="goToStep('stepElec')">Weiter →</button>
     </div>
   </div>
 
@@ -488,8 +586,6 @@ function updateGlobalProgress(rid) {
     for(var j=0;j<rooms.length;j++) allRooms.push(rooms[j]);
   }
   var surveyDone = allRooms.length>0 && allRooms.every(function(r){ return isRoomDone(r); });
-<<<<<<< HEAD
-=======
   // For Haus: also require Treppenhaus to be done
   var isHaus = document.getElementById('objektTyp').value === 'haus';
   if(isHaus) {
@@ -498,7 +594,6 @@ function updateGlobalProgress(rid) {
     var thDone = thEtagen.every(function(e){ return isTHEtageDone(e); });
     surveyDone = surveyDone && thDone;
   }
->>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
   document.getElementById('check_tab_Survey').innerText = surveyDone ? '✅' : '';
 
   var zvKeys = ['z_count','zv_rows','zv_spd','zv_haupt','zv_fi4','zv_fi2','zv_rcbo','zv_b16_1p','zv_b16_3p','zv_c_typ','zv_eltako'];
@@ -612,23 +707,14 @@ function addAnotherKeller() {
 
 function nextEtappe() {
   if(currentIdx<etappen.length-1){ currentIdx++; buildEtappenNav(); showEtappe(true); }
-<<<<<<< HEAD
-  else goToStep('stepElec');
-=======
   else {
     var isHaus = document.getElementById('objektTyp').value === 'haus';
     goToStep(isHaus ? 'stepTreppenhaus' : 'stepElec');
   }
->>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
 }
 
 function universalBack() {
   var cur = document.querySelector('.step.active').id;
-<<<<<<< HEAD
-  if(cur==='stepFinal') goToStep('stepElec');
-  else if(cur==='stepElec') goToStep('stepSurvey');
-  else if(cur==='stepSurvey') {
-=======
   var isHaus = document.getElementById('objektTyp').value === 'haus';
   if(cur==='stepFinal') {
     goToStep(isHaus ? 'stepTreppenhaus' : 'stepElec');
@@ -637,7 +723,6 @@ function universalBack() {
   } else if(cur==='stepTreppenhaus') {
     goToStep('stepSurvey');
   } else if(cur==='stepSurvey') {
->>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
     if(currentIdx>0){ currentIdx--; buildEtappenNav(); showEtappe(true); }
     else goToStep('step1');
   }
@@ -738,12 +823,8 @@ function elecChangeVal(id, amount) {
 function elecChanged() { updateGlobalProgress(); }
 
 function tabClick(stepId) {
-<<<<<<< HEAD
-  if(document.getElementById('tab_'+stepId).classList.contains('locked')) return;
-=======
   var tabEl = document.getElementById('tab_'+stepId);
   if(!tabEl || tabEl.classList.contains('locked')) return;
->>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
   if(stepId==='stepFinal'){ finalize(); return; }
   goToStep(stepId);
 }
@@ -751,8 +832,6 @@ function tabClick(stepId) {
 function confirmReset() {
   if(confirm('Möchten Sie wirklich alle Daten löschen und die App zurücksetzen?')) window.location.reload();
 }
-<<<<<<< HEAD
-=======
 
 // ═══════════════════════════════════════════════════════════════
 // TREPPENHAUS – Logik
@@ -1034,7 +1113,6 @@ finalize = function() {
 
   document.getElementById('totalMaterialContent').innerHTML += thMatHtml + wippenHtml;
 };
->>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
 </script>
 <script>
   if ('serviceWorker' in navigator) {
