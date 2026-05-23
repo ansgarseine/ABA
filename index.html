@@ -101,6 +101,10 @@
   <div class="tab-bar" id="tabBar">
     <button class="tab-btn active" id="tab_step1" data-step="step1" onclick="tabClick('step1')">📋 Stammdaten</button>
     <button class="tab-btn locked" id="tab_stepSurvey" data-step="stepSurvey" onclick="tabClick('stepSurvey')">🏠 Aufnahme <span id="check_tab_Survey"></span></button>
+<<<<<<< HEAD
+=======
+    <button class="tab-btn locked" id="tab_stepTreppenhaus" data-step="stepTreppenhaus" onclick="tabClick('stepTreppenhaus')" style="display:none;">🪜 Treppenhaus <span id="check_tab_Treppenhaus"></span></button>
+>>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
     <button class="tab-btn locked" id="tab_stepElec" data-step="stepElec" onclick="tabClick('stepElec')">⚡ Elektr. Anlage <span id="check_tab_Elec"></span></button>
     <button class="tab-btn locked" id="tab_stepFinal" data-step="stepFinal" onclick="tabClick('stepFinal')">✅ Abschluss <span id="check_tab_Final"></span></button>
   </div>
@@ -484,6 +488,17 @@ function updateGlobalProgress(rid) {
     for(var j=0;j<rooms.length;j++) allRooms.push(rooms[j]);
   }
   var surveyDone = allRooms.length>0 && allRooms.every(function(r){ return isRoomDone(r); });
+<<<<<<< HEAD
+=======
+  // For Haus: also require Treppenhaus to be done
+  var isHaus = document.getElementById('objektTyp').value === 'haus';
+  if(isHaus) {
+    var thEtagen = ['keller','eg','1og'];
+    if(document.getElementById('th_section_2og') && document.getElementById('th_section_2og').style.display !== 'none') thEtagen.push('2og');
+    var thDone = thEtagen.every(function(e){ return isTHEtageDone(e); });
+    surveyDone = surveyDone && thDone;
+  }
+>>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
   document.getElementById('check_tab_Survey').innerText = surveyDone ? '✅' : '';
 
   var zvKeys = ['z_count','zv_rows','zv_spd','zv_haupt','zv_fi4','zv_fi2','zv_rcbo','zv_b16_1p','zv_b16_3p','zv_c_typ','zv_eltako'];
@@ -597,14 +612,32 @@ function addAnotherKeller() {
 
 function nextEtappe() {
   if(currentIdx<etappen.length-1){ currentIdx++; buildEtappenNav(); showEtappe(true); }
+<<<<<<< HEAD
   else goToStep('stepElec');
+=======
+  else {
+    var isHaus = document.getElementById('objektTyp').value === 'haus';
+    goToStep(isHaus ? 'stepTreppenhaus' : 'stepElec');
+  }
+>>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
 }
 
 function universalBack() {
   var cur = document.querySelector('.step.active').id;
+<<<<<<< HEAD
   if(cur==='stepFinal') goToStep('stepElec');
   else if(cur==='stepElec') goToStep('stepSurvey');
   else if(cur==='stepSurvey') {
+=======
+  var isHaus = document.getElementById('objektTyp').value === 'haus';
+  if(cur==='stepFinal') {
+    goToStep(isHaus ? 'stepTreppenhaus' : 'stepElec');
+  } else if(cur==='stepElec') {
+    goToStep(isHaus ? 'stepTreppenhaus' : 'stepSurvey');
+  } else if(cur==='stepTreppenhaus') {
+    goToStep('stepSurvey');
+  } else if(cur==='stepSurvey') {
+>>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
     if(currentIdx>0){ currentIdx--; buildEtappenNav(); showEtappe(true); }
     else goToStep('step1');
   }
@@ -705,7 +738,12 @@ function elecChangeVal(id, amount) {
 function elecChanged() { updateGlobalProgress(); }
 
 function tabClick(stepId) {
+<<<<<<< HEAD
   if(document.getElementById('tab_'+stepId).classList.contains('locked')) return;
+=======
+  var tabEl = document.getElementById('tab_'+stepId);
+  if(!tabEl || tabEl.classList.contains('locked')) return;
+>>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
   if(stepId==='stepFinal'){ finalize(); return; }
   goToStep(stepId);
 }
@@ -713,6 +751,290 @@ function tabClick(stepId) {
 function confirmReset() {
   if(confirm('Möchten Sie wirklich alle Daten löschen und die App zurücksetzen?')) window.location.reload();
 }
+<<<<<<< HEAD
+=======
+
+// ═══════════════════════════════════════════════════════════════
+// TREPPENHAUS – Logik
+// ═══════════════════════════════════════════════════════════════
+
+// Alle Etagen-IDs im Treppenhaus
+var TH_ETAGEN = ['keller','eg','1og','2og'];
+
+// Felder je Etage (key → Label)
+var TH_FIELDS = {
+  keller: [
+    {k:'th_k_taster',   l:'Taster Licht (Keller)'},
+    {k:'th_k_kontroll', l:'Kontrollschalter (Keller)'},
+    {k:'th_k_sd',       l:'Steckdose (Keller)'},
+    {k:'th_k_r1',       l:'Rahmen 1-f (Keller)'},
+    {k:'th_k_r2',       l:'Rahmen 2-f (Keller)'},
+    {k:'th_k_r3',       l:'Rahmen 3-f (Keller)'}
+  ],
+  eg: [
+    {k:'th_eg_etage',   l:'Etagentaster (EG)'},
+    {k:'th_eg_licht',   l:'Taster Licht (EG)'},
+    {k:'th_eg_kontroll',l:'Kontrollschalter (EG)'},
+    {k:'th_eg_sd',      l:'Steckdose (EG)'},
+    {k:'th_eg_r1',      l:'Rahmen 1-f (EG)'},
+    {k:'th_eg_r2',      l:'Rahmen 2-f (EG)'},
+    {k:'th_eg_r3',      l:'Rahmen 3-f (EG)'}
+  ],
+  '1og': [
+    {k:'th_1og_etage',   l:'Etagentaster (1.OG)'},
+    {k:'th_1og_licht',   l:'Taster Licht (1.OG)'},
+    {k:'th_1og_kontroll',l:'Kontrollschalter (1.OG)'},
+    {k:'th_1og_sd',      l:'Steckdose (1.OG)'},
+    {k:'th_1og_r1',      l:'Rahmen 1-f (1.OG)'},
+    {k:'th_1og_r2',      l:'Rahmen 2-f (1.OG)'},
+    {k:'th_1og_r3',      l:'Rahmen 3-f (1.OG)'}
+  ],
+  '2og': [
+    {k:'th_2og_etage',   l:'Etagentaster (2.OG)'},
+    {k:'th_2og_licht',   l:'Taster Licht (2.OG)'},
+    {k:'th_2og_kontroll',l:'Kontrollschalter (2.OG)'},
+    {k:'th_2og_sd',      l:'Steckdose (2.OG)'},
+    {k:'th_2og_r1',      l:'Rahmen 1-f (2.OG)'},
+    {k:'th_2og_r2',      l:'Rahmen 2-f (2.OG)'},
+    {k:'th_2og_r3',      l:'Rahmen 3-f (2.OG)'}
+  ]
+};
+
+// Alle Wippenmaterial-Keys im Hauptgebäude
+// (Schalter + Taster + Rolladen + Dimmer + Kontrollschalter aus MAT_FULL / MAT_WET)
+var WIPPEN_KEYS_MAT = ['sch','ssch','ksch','tas','dim','roll'];
+
+// Akkordion für Treppenhaus-Etagen
+function toggleTHAccordion(bodyId, headerEl) {
+  var body = document.getElementById(bodyId);
+  var isOpen = body.classList.contains('active');
+  // alle schließen
+  var allBodies = document.querySelectorAll('#stepTreppenhaus .room-body');
+  for(var i=0;i<allBodies.length;i++) allBodies[i].classList.remove('active');
+  // angeklickte öffnen wenn vorher zu
+  if(!isOpen) body.classList.add('active');
+}
+
+// OK-Button je Etage
+function toggleTHOk(etage) {
+  var key = 'th_ok_'+etage;
+  storage[key] = !storage[key];
+  var btn = document.getElementById('th_ok_'+etage);
+  if(storage[key]) {
+    btn.classList.add('active');
+    btn.textContent = 'ALLES OK ✓';
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = 'Nichts zu tun / OK';
+  }
+  saveTH();
+  updateTHProgress();
+}
+
+// Alle TH-Felder in storage speichern
+function saveTH() {
+  for(var etage in TH_FIELDS) {
+    var fields = TH_FIELDS[etage];
+    for(var i=0;i<fields.length;i++) {
+      var el = document.getElementById(fields[i].k);
+      if(el) storage[fields[i].k] = el.value;
+    }
+  }
+}
+
+// Ist eine Treppenhaus-Etage abgeschlossen?
+function isTHEtageDone(etage) {
+  if(storage['th_ok_'+etage]) return true;
+  var fields = TH_FIELDS[etage] || [];
+  for(var i=0;i<fields.length;i++) {
+    if(parseInt(storage[fields[i].k])>0) return true;
+  }
+  return false;
+}
+
+// Fortschrittsanzeige im Treppenhaus-Tab
+function updateTHProgress() {
+  // Sichtbare Etagen
+  var visibleEtagen = ['keller','eg','1og'];
+  if(document.getElementById('th_section_2og').style.display !== 'none') {
+    visibleEtagen.push('2og');
+  }
+  var allDone = true;
+  for(var i=0;i<visibleEtagen.length;i++) {
+    var e = visibleEtagen[i];
+    var done = isTHEtageDone(e);
+    var doneEl = document.getElementById('th_done_'+e);
+    if(doneEl) doneEl.innerText = done ? '✅' : '';
+    if(!done) allDone = false;
+  }
+  document.getElementById('check_tab_Treppenhaus').innerText = allDone ? '✅' : '';
+  updateGlobalProgress();
+}
+
+// Wippen aus dem gesamten Aufnahme-Bereich + Treppenhaus zusammenzählen
+function countAllWippen() {
+  var w_standard  = 0; // normale Taster + Schalter
+  var w_serien    = 0; // Serien-Schalter
+  var w_kontroll  = 0; // Kontrollschalter
+  var w_dimmer    = 0; // Dimmer
+  var w_rolladen  = 0; // Rolladen-Schalter
+  var w_namens    = 0; // Etagentaster (Namenstaster)
+
+  // ── Alle Zimmer / Etappen ──
+  for(var ei=0;ei<etappen.length;ei++) {
+    var rooms = etappen[ei].rooms;
+    for(var ri=0;ri<rooms.length;ri++) {
+      var r = rooms[ri];
+      w_standard  += parseInt(storage[r.id+'_sch'])  ||0;
+      w_standard  += parseInt(storage[r.id+'_tas'])  ||0;
+      w_serien    += parseInt(storage[r.id+'_ssch']) ||0;
+      w_kontroll  += parseInt(storage[r.id+'_ksch']) ||0;
+      w_dimmer    += parseInt(storage[r.id+'_dim'])  ||0;
+      w_rolladen  += parseInt(storage[r.id+'_roll']) ||0;
+    }
+  }
+
+  // ── Treppenhaus Keller ──
+  w_standard  += parseInt(storage['th_k_taster'])   ||0;
+  w_kontroll  += parseInt(storage['th_k_kontroll']) ||0;
+
+  // ── Treppenhaus EG ──
+  w_standard  += parseInt(storage['th_eg_licht'])   ||0;
+  w_kontroll  += parseInt(storage['th_eg_kontroll'])||0;
+  w_namens    += parseInt(storage['th_eg_etage'])   ||0;
+
+  // ── Treppenhaus 1.OG ──
+  w_standard  += parseInt(storage['th_1og_licht'])   ||0;
+  w_kontroll  += parseInt(storage['th_1og_kontroll'])||0;
+  w_namens    += parseInt(storage['th_1og_etage'])   ||0;
+
+  // ── Treppenhaus 2.OG (falls vorhanden) ──
+  if(document.getElementById('th_section_2og').style.display !== 'none') {
+    w_standard  += parseInt(storage['th_2og_licht'])   ||0;
+    w_kontroll  += parseInt(storage['th_2og_kontroll'])||0;
+    w_namens    += parseInt(storage['th_2og_etage'])   ||0;
+  }
+
+  return {
+    standard: w_standard,
+    serien:   w_serien,
+    kontroll: w_kontroll,
+    dimmer:   w_dimmer,
+    rolladen: w_rolladen,
+    namens:   w_namens
+  };
+}
+
+// Treppenhaus-Tab anzeigen/verstecken je nach Objekt-Typ
+// (wird in toggleTyp() eingehängt – Original bleibt bestehen)
+var _origToggleTyp = toggleTyp;
+toggleTyp = function() {
+  _origToggleTyp();
+  var isHaus = document.getElementById('objektTyp').value === 'haus';
+  var tabTH = document.getElementById('tab_stepTreppenhaus');
+  tabTH.style.display = isHaus ? '' : 'none';
+  if(!isHaus) tabTH.classList.add('locked');
+};
+
+// Nach startSurvey() Tab entsperren und 2.OG-Sektion steuern
+var _origStartSurvey = startSurvey;
+startSurvey = function() {
+  _origStartSurvey();
+  var isHaus = document.getElementById('objektTyp').value === 'haus';
+  var tabTH = document.getElementById('tab_stepTreppenhaus');
+  if(isHaus) {
+    tabTH.classList.remove('locked');
+    // 2.OG-Sektion: nur zeigen wenn ≥ 2 OG gewählt
+    var ogs = parseInt(document.getElementById('ogAnzahl').value)||0;
+    document.getElementById('th_section_2og').style.display = (ogs >= 2) ? '' : 'none';
+  }
+};
+
+// Abschluss: Treppenhaus-Daten sichern + in Report einbauen + Wippen-Zusammenfassung
+var _origFinalize = finalize;
+finalize = function() {
+  saveTH();
+  _origFinalize();
+
+  // ── Treppenhaus-Block in Gesamtmaterial einbauen ──
+  var thParts = [];
+
+  var thGroups = [
+    { label: 'Keller',  fields: TH_FIELDS['keller'] },
+    { label: 'EG',      fields: TH_FIELDS['eg']     },
+    { label: '1. OG',   fields: TH_FIELDS['1og']    },
+    { label: '2. OG',   fields: TH_FIELDS['2og']    }
+  ];
+
+  var show2og = document.getElementById('th_section_2og').style.display !== 'none';
+  var thDetailHtml = '';
+  for(var gi=0;gi<thGroups.length;gi++) {
+    if(gi===3 && !show2og) continue;
+    var g = thGroups[gi];
+    var lineParts = [];
+    for(var fi=0;fi<g.fields.length;fi++) {
+      var v = parseInt(storage[g.fields[fi].k])||0;
+      if(v>0) lineParts.push(g.fields[fi].l+': '+v);
+    }
+    if(storage['th_ok_'+TH_ETAGEN[gi]]) lineParts.push('OK');
+    if(lineParts.length>0) {
+      thDetailHtml += '<div class="summary-box"><b>🪜 Treppenhaus – '+g.label+':</b> '+lineParts.join(', ')+'</div>';
+    }
+  }
+  if(thDetailHtml) {
+    document.getElementById('finalDetails').innerHTML += thDetailHtml;
+  }
+
+  // ── Wippen-Gesamtzählung ──
+  var w = countAllWippen();
+  var wippenHtml = '';
+  if(w.standard+w.serien+w.kontroll+w.dimmer+w.rolladen+w.namens > 0) {
+    wippenHtml += '<div style="margin-top:12px; padding-top:10px; border-top:2px solid #cbd5e1;">';
+    wippenHtml += '<b>🔘 Wippen-Gesamtzählung (alle Räume + Treppenhaus):</b><br>';
+    if(w.standard>0)  wippenHtml += '<b>Taster / Schalter:</b> '+w.standard+'<br>';
+    if(w.serien>0)    wippenHtml += '<b>Serien-Schalter:</b> '+w.serien+'<br>';
+    if(w.kontroll>0)  wippenHtml += '<b>Kontrollschalter:</b> '+w.kontroll+'<br>';
+    if(w.dimmer>0)    wippenHtml += '<b>Dimmer:</b> '+w.dimmer+'<br>';
+    if(w.rolladen>0)  wippenHtml += '<b>Rolladen-Schalter:</b> '+w.rolladen+'<br>';
+    if(w.namens>0)    wippenHtml += '<b>Namens-/Etagentaster:</b> '+w.namens+'<br>';
+    var wTotal = w.standard+w.serien+w.kontroll+w.dimmer+w.rolladen+w.namens;
+    wippenHtml += '<div style="margin-top:6px;font-size:15px;"><b>🔘 WIPPEN GESAMT: '+wTotal+'</b></div>';
+    wippenHtml += '</div>';
+  }
+
+  // ── Treppenhaus-Materialblock in Gesamtliste ──
+  var thMatHtml = '';
+  var thTaster    = (parseInt(storage['th_k_taster'])||0)+(parseInt(storage['th_eg_licht'])||0)
+                  +(parseInt(storage['th_1og_licht'])||0)+(show2og?(parseInt(storage['th_2og_licht'])||0):0);
+  var thKontroll  = (parseInt(storage['th_k_kontroll'])||0)+(parseInt(storage['th_eg_kontroll'])||0)
+                  +(parseInt(storage['th_1og_kontroll'])||0)+(show2og?(parseInt(storage['th_2og_kontroll'])||0):0);
+  var thSd        = (parseInt(storage['th_k_sd'])||0)+(parseInt(storage['th_eg_sd'])||0)
+                  +(parseInt(storage['th_1og_sd'])||0)+(show2og?(parseInt(storage['th_2og_sd'])||0):0);
+  var thEtage     = (parseInt(storage['th_eg_etage'])||0)+(parseInt(storage['th_1og_etage'])||0)
+                  +(show2og?(parseInt(storage['th_2og_etage'])||0):0);
+  var thR1        = (parseInt(storage['th_k_r1'])||0)+(parseInt(storage['th_eg_r1'])||0)
+                  +(parseInt(storage['th_1og_r1'])||0)+(show2og?(parseInt(storage['th_2og_r1'])||0):0);
+  var thR2        = (parseInt(storage['th_k_r2'])||0)+(parseInt(storage['th_eg_r2'])||0)
+                  +(parseInt(storage['th_1og_r2'])||0)+(show2og?(parseInt(storage['th_2og_r2'])||0):0);
+  var thR3        = (parseInt(storage['th_k_r3'])||0)+(parseInt(storage['th_eg_r3'])||0)
+                  +(parseInt(storage['th_1og_r3'])||0)+(show2og?(parseInt(storage['th_2og_r3'])||0):0);
+
+  if(thTaster+thKontroll+thSd+thEtage+thR1+thR2+thR3 > 0) {
+    thMatHtml += '<div style="margin-top:12px; padding-top:10px; border-top:2px solid #cbd5e1;">';
+    thMatHtml += '<b>🪜 Treppenhaus (gesamt):</b><br>';
+    if(thTaster>0)   thMatHtml += '<b>Taster Licht:</b> '+thTaster+'<br>';
+    if(thKontroll>0) thMatHtml += '<b>Kontrollschalter:</b> '+thKontroll+'<br>';
+    if(thEtage>0)    thMatHtml += '<b>Etagentaster:</b> '+thEtage+'<br>';
+    if(thSd>0)       thMatHtml += '<b>Steckdose:</b> '+thSd+'<br>';
+    if(thR1>0)       thMatHtml += '<b>Rahmen 1-f:</b> '+thR1+'<br>';
+    if(thR2>0)       thMatHtml += '<b>Rahmen 2-f:</b> '+thR2+'<br>';
+    if(thR3>0)       thMatHtml += '<b>Rahmen 3-f:</b> '+thR3+'<br>';
+    thMatHtml += '</div>';
+  }
+
+  document.getElementById('totalMaterialContent').innerHTML += thMatHtml + wippenHtml;
+};
+>>>>>>> afd70df (Treppenhaus‑Modul integriert + neue Icons)
 </script>
 <script>
   if ('serviceWorker' in navigator) {
