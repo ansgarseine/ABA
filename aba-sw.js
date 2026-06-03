@@ -6,8 +6,8 @@ const FILES = [
   "./ABA_iOS_Final.html",
   "./style.css",
   "./main.js",
-  "./bilder/icon-192.png",
-  "./bilder/icon-512.png"
+  "./bilder/aba-icon-192.png",
+  "./bilder/aba-icon-512.png"
 ];
 
 self.addEventListener("install", event => {
