@@ -625,7 +625,7 @@ function toggleLocalAccordion(id) {
 // ── Foto mit Canvas-Wasserzeichen ─────────────────────────────
 function addPhoto(rid) {
   var input = document.createElement('input');
-  input.type = 'file'; input.accept = 'image/*';
+  input.type = 'file'; input.accept = 'image/*'; input.capture = 'camera';
   input.onchange = function(e) {
     if(!e.target.files || !e.target.files[0]) return;
     var reader = new FileReader();
