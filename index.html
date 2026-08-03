@@ -774,11 +774,25 @@ function getDateString() {
 }
 
 function downloadAllPhotos() {
+  var allPhotos = [];
   for(var rid in roomPhotos) {
     for(var i=0;i<roomPhotos[rid].length;i++) {
-      var a=document.createElement('a'); a.href=roomPhotos[rid][i]; a.download=rid+'_'+(i+1)+'.jpg'; a.click();
+      allPhotos.push({href: roomPhotos[rid][i], name: rid+'_'+(i+1)+'.jpg'});
     }
   }
+  var idx = 0;
+  function downloadNext() {
+    if(idx >= allPhotos.length) return;
+    var a = document.createElement('a');
+    a.href = allPhotos[idx].href;
+    a.download = allPhotos[idx].name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    idx++;
+    setTimeout(downloadNext, 800);
+  }
+  downloadNext();
 }
 
 function exportBackup() {
